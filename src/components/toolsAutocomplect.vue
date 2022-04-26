@@ -3,6 +3,7 @@
     <div class="ac-wrapper">
       <input type="text" class="ac-input" v-model.trim="text" @click="idx==null" v-on:keydown.enter="keyEnter()"
              v-on:keydown.down="keyDown()" v-on:keydown.up="keyUp()">
+      <div class="ac-button" @click="putValueBack(); selectedList = []">send</div>
       <div class="ac-items" v-if="selectedList.length>0">
         <div v-for="(t,i) in selectedList" :key="i" :class="'ac-item '+((i == idx) ? 'hovers':'')"
              @click="selectItem(i)">
@@ -19,13 +20,13 @@ export default {
   props: {
     items: Array,
     css: Array,
-    id: String
+    id: String,
+    datareturn: Function
   },
   watch: {
     text() {
       this.searching();
     },
-
   },
   data() {
     return {
@@ -34,11 +35,13 @@ export default {
         minChar: 1,
       },
       selectedList: [],
-      idx: null,
+      idx: -1,
     }
   },
   mounted() {
-    // let d = document.querySelector('.ac-wrapper');
+    /**
+     * Enable mouse click tracking to close the popup list
+     */
     document.addEventListener('click', e => {
       let f = e.path.findIndex((j) => j.className == 'ac-wrapper');
       if (f < 0) this.selectedList = [];
@@ -46,15 +49,19 @@ export default {
     this.put_css();
   },
   methods: {
+    putValueBack() {
+      this.datareturn( this.text);
+    },
+    /**
+     * put_css: A function that fills the component elements with styles passed from the parent component
+     */
     put_css() {
       for (let e of this.css) {
         let k = Object.keys(e);
         let els = document.querySelectorAll('#' + this.id + ' .' + k);
-        console.log(els);
         if (els) {
           for (let css of Object.keys(e[k])) {
             for (let el of els) {
-              console.log(el, css, e[k][css]);
               el.style[css] = e[k][css];
             }
           }
@@ -62,29 +69,40 @@ export default {
       }
 
     },
-
+    /**
+     * keyEnter: Adjusts the behavior of the component when pressing Enter
+     */
     keyEnter() {
-      if (this.idx !== null) {
+      if (this.idx > -1) {
         this.text = this.selectedList[this.idx].name;
-        this.idx = null;
+        this.idx = -1;
       } else {
         this.selectedList = [];
-        alert('send data');
+        this.putValueBack();
       }
     },
+    /**
+     * keyDown: Moves the cursor down the list of found matches
+     */
     keyDown() {
-      if (this.selectedList.length > 0 && this.selectedList.length > this.idx + 1) {
-        if (this.idx === null) this.idx = 0; else this.idx++;
+      if (this.selectedList.length > 0) {
+        if (this.idx === -1) this.idx = 0; else this.idx++;
       }
     },
+    /**
+     * keyDown: Moves the cursor up the list of found matches
+     */
     keyUp() {
       if (this.selectedList.length > 0 && this.selectedList.length >= this.idx + 1) {
-        if (this.idx === 0) this.idx = null; else this.idx--;
+        if (this.idx === 0) this.idx = -1; else this.idx--;
       }
     },
     selectItem(i) {
       this.text = this.selectedList[i].name;
     },
+    /**
+     * searching: Search for matches with the input string
+     */
     searching() {
       if (this.param.minChar <= this.text.length) {
         const runs = async () => {
@@ -104,10 +122,7 @@ export default {
           }
           return [await sl(), await putcss()];
         }
-
         runs();
-
-
       } else this.selectedList = [];
     }
   }
@@ -120,7 +135,7 @@ export default {
 }
 
 .hovers {
-  background-color: #eee;
+  background-color: #ccc;
   cursor: pointer;
 }
 
@@ -138,6 +153,15 @@ export default {
   font-size: 110%;
   width: 100%;
   background-color: #fefefe;
+
+}
+.ac-button {
+  text-align: end;
+  padding-right: 10px;
+  margin-top: -24px;
+  color: #00f;
+  height: 24px;
+  cursor: pointer;
 }
 
 .ac-items {
@@ -155,7 +179,7 @@ export default {
 }
 
 .ac-item:hover {
-  background-color: #eee;
+  background-color: #ccc;
   cursor: pointer;
 }
 
